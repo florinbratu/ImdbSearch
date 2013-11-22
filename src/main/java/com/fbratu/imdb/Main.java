@@ -29,7 +29,22 @@ public class Main {
 
     private static final String START_INDEX_PROP = "index.start";
 
+    private static volatile boolean shutdownRequested = false;
+
     public static void main(String args[]) throws IOException {
+        final Thread mainThread = Thread.currentThread();
+        // register shutdown hook
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                shutdownRequested = true;
+                try {
+                    mainThread.join();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
         // load search properties
         Properties props = new Properties();
         props.load(Main.class.getResourceAsStream(PROPERTIES_FILE));
@@ -47,7 +62,7 @@ public class Main {
                 Pattern.compile(notFoundPattern));
         String startIndex = props.getProperty(START_INDEX_PROP);
         String urlSuffix = startIndex;
-        for(int i=0;i<20;i++) {
+        while(!shutdownRequested) {
             String url = urlPrefix + urlSuffix + "";
             if(!parser.parse(url))  {
                 System.out.println("inexistant page " + url);
@@ -60,6 +75,7 @@ public class Main {
             }
             urlSuffix = nextIndex(urlSuffix);
         }
+        System.out.println("Search stopped at:" + urlSuffix);
     }
 
     private static String nextIndex(String index) {
