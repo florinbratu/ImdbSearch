@@ -1,6 +1,7 @@
 package com.fbratu.imdb;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -30,6 +31,10 @@ public class Main {
     private static final String START_INDEX_PROP = "index.start";
 
     private static final String INDEX_NOTIFICATION_FREQ_PROP = "index.notification.frequency";
+
+    private static final String TIMEOUT_RETRY_COUNT_PROP = "timeout.retry.count";
+
+    private static final String TIMEOUT_RETRY_FREQ_PROP = "timeout.retry.frequency";
 
     private static volatile boolean shutdownRequested = false;
 
@@ -66,22 +71,48 @@ public class Main {
         int indexNotificationFrequency = Integer.parseInt(props.getProperty(INDEX_NOTIFICATION_FREQ_PROP));
         String urlSuffix = startIndex;
         int counter = 0;
+        int retryCount = Integer.parseInt(props.getProperty(TIMEOUT_RETRY_COUNT_PROP));
+        int retries = retryCount;
+        long retryFrequency = Long.parseLong(props.getProperty(TIMEOUT_RETRY_FREQ_PROP));
+        boolean connectionTimedOut;
         while(!shutdownRequested) {
             String url = urlPrefix + urlSuffix + "";
-            if(!parser.parse(url))  {
-                System.out.println("inexistant page " + url);
-                break;
+            try {
+                if(!parser.parse(url))  {
+                    System.out.println("inexistant page " + url);
+                    break;
+                }
+                connectionTimedOut = false;
+            } catch(ConnectException e) {
+                connectionTimedOut = true;
             }
             double rating = parser.getRating();
             if(minRating < rating && rating < maxRating
                     && parser.getUserCount() > usersThreshold) {
                 System.out.println(url);
             }
-            urlSuffix = nextIndex(urlSuffix);
-            counter++;
-            if(counter==indexNotificationFrequency) {
-                System.err.println("Now arriving at " + urlSuffix);
-                counter=0;
+            if(!connectionTimedOut) {
+                urlSuffix = nextIndex(urlSuffix);
+                counter++;
+                if(counter==indexNotificationFrequency) {
+                    System.err.println("Now arriving at " + urlSuffix);
+                    counter=0;
+                }
+                retries = retryCount;
+            } else {
+                if(retries == 0) {
+                    System.err.println("Dropping " + url);
+                    urlSuffix = nextIndex(urlSuffix);
+                    retries = retryCount;
+                } else {
+                    System.err.println("Could not access " + url + " retrying in " + (retryFrequency / 1000) + " secs");
+                    try {
+                        Thread.sleep(retryFrequency);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    retries--;
+                }
             }
         }
         System.err.println("Search stopped at:" + urlSuffix);
