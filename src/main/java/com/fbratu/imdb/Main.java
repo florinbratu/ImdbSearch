@@ -1,6 +1,8 @@
 package com.fbratu.imdb;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
@@ -25,8 +27,9 @@ public class Main {
 
     private static final String RATING_MAX_PROP = "rating.max";
 
+    private static final String START_INDEX_PROP = "index.start";
+
     public static void main(String args[]) throws IOException {
-        String urlSuffix = args[0];
         // load search properties
         Properties props = new Properties();
         props.load(Main.class.getResourceAsStream(PROPERTIES_FILE));
@@ -34,7 +37,6 @@ public class Main {
         double minRating = Double.parseDouble(props.getProperty(RATING_MIN_PROP));
         double maxRating = Double.parseDouble(props.getProperty(RATING_MAX_PROP));
         String urlPrefix = props.getProperty(IMDB_URL_PREFIX_PROP);
-        String url = urlPrefix + urlSuffix;
         String ratingPattern = props.getProperty(RATING_PATTERN_PROP);
         String usersCountPattern = props.getProperty(USERS_COUNT_PATTERN_PROP);
         int usersThreshold = Integer.parseInt(props.getProperty(USERS_THRESHOLD_PROP));
@@ -43,6 +45,8 @@ public class Main {
                 Pattern.compile(ratingPattern),
                 Pattern.compile(usersCountPattern),
                 Pattern.compile(notFoundPattern));
+        String startIndex = props.getProperty(START_INDEX_PROP);
+        String url = urlPrefix + startIndex + "";
         if(!parser.parse(url))  {
             System.out.println("inexistant page " + url);
         }
@@ -51,6 +55,45 @@ public class Main {
                 && parser.getUserCount() > usersThreshold) {
             System.out.println(url);
         }
+    }
+
+    public static void testNextIndex(String args[]) {
+        String testStrings[] = new String[] {
+          "0000009",
+                "0000099",
+                "0000999",
+                "0009999",
+                "0099999",
+                "0999999",
+                "0098786",
+                "0919999",
+                "0976598"
+        };
+        for(String index:testStrings) {
+            System.out.println(nextIndex(index));
+        }
+    }
+
+    private static final Map<String, String> cornerCases = new HashMap<String, String>();
+
+    static {
+        cornerCases.put("0000009","0000010");
+        cornerCases.put("0000099","0000100");
+        cornerCases.put("0000999","0001000");
+        cornerCases.put("0009999","0010000");
+        cornerCases.put("0099999","0100000");
+        cornerCases.put("0999999","1000000");
+    }
+
+    private static String nextIndex(String index) {
+        if(cornerCases.containsKey(index))
+            return cornerCases.get(index);
+        int firstNonZero;
+        for(firstNonZero=0;firstNonZero<index.length() && index.charAt(firstNonZero)=='0';firstNonZero++);
+        // now, i has the number of zeros
+        int value = Integer.parseInt(index);
+        value++;
+        return index.substring(0,firstNonZero) + value;
     }
 
 }
