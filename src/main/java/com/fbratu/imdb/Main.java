@@ -29,6 +29,8 @@ public class Main {
 
     private static final String START_INDEX_PROP = "index.start";
 
+    private static final String INDEX_NOTIFICATION_FREQ_PROP = "index.notification.frequency";
+
     private static volatile boolean shutdownRequested = false;
 
     public static void main(String args[]) throws IOException {
@@ -61,7 +63,9 @@ public class Main {
                 Pattern.compile(usersCountPattern),
                 Pattern.compile(notFoundPattern));
         String startIndex = props.getProperty(START_INDEX_PROP);
+        int indexNotificationFrequency = Integer.parseInt(props.getProperty(INDEX_NOTIFICATION_FREQ_PROP));
         String urlSuffix = startIndex;
+        int counter = 0;
         while(!shutdownRequested) {
             String url = urlPrefix + urlSuffix + "";
             if(!parser.parse(url))  {
@@ -74,6 +78,11 @@ public class Main {
                 System.out.println(url);
             }
             urlSuffix = nextIndex(urlSuffix);
+            counter++;
+            if(counter==indexNotificationFrequency) {
+                System.err.println("Now arriving at " + urlSuffix);
+                counter=0;
+            }
         }
         System.err.println("Search stopped at:" + urlSuffix);
     }
