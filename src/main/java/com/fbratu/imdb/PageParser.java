@@ -22,16 +22,20 @@ public class PageParser {
 
     private final Pattern usersCountPattern;
 
+    private final Pattern notFoundPattern;
+
     private String rating;
 
     private String usersCount;
 
-    public PageParser(Pattern ratingPattern, Pattern usersCountPattern) {
+    public PageParser(Pattern ratingPattern, Pattern usersCountPattern, Pattern notFoundPattern) {
         this.ratingPattern = ratingPattern;
         this.usersCountPattern = usersCountPattern;
+        this.notFoundPattern = notFoundPattern;
     }
 
-    public void parse(String url) throws IOException {
+    // return false if 404 page
+    public boolean parse(String url) throws IOException {
         URL urlToOpen = new URL(url);
         BufferedReader bufferedReader = new BufferedReader(
                 new InputStreamReader(
@@ -41,18 +45,25 @@ public class PageParser {
         while ((s = bufferedReader.readLine()) != null) {
             builder.append(s);
         }
-        Matcher ratingMatcher = ratingPattern.matcher(builder.toString());
+        String content = builder.toString();
+        // check for 404
+        Matcher notFoundMatcher = notFoundPattern.matcher(content);
+        if(notFoundMatcher.find()) {
+            return false;
+        }
+        Matcher ratingMatcher = ratingPattern.matcher(content);
         if(ratingMatcher.find()) {
             rating = ratingMatcher.group(1);
         } else {
             rating = null;
         }
-        Matcher usersCountMatcher = usersCountPattern.matcher(builder.toString());
+        Matcher usersCountMatcher = usersCountPattern.matcher(content);
         if(usersCountMatcher.find()) {
             usersCount = usersCountMatcher.group(1);
         } else {
             usersCount = null;
         }
+        return true;
     }
 
     public double getRating() {

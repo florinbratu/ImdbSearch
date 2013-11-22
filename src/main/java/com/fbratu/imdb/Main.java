@@ -17,6 +17,8 @@ public class Main {
 
     private static final String USERS_COUNT_PATTERN_PROP = "users.count.pattern";
 
+    private static final String NOT_FOUND_PATTERN_PROP = "404.pattern";
+
     private static final String USERS_THRESHOLD_PROP = "users.threshold";
 
     private static final String RATING_MIN_PROP = "rating.min";
@@ -41,10 +43,14 @@ public class Main {
         String ratingPattern = props.getProperty(RATING_PATTERN_PROP);
         String usersCountPattern = props.getProperty(USERS_COUNT_PATTERN_PROP);
         int usersThreshold = Integer.parseInt(props.getProperty(USERS_THRESHOLD_PROP));
+        String notFoundPattern = props.getProperty(NOT_FOUND_PATTERN_PROP);
         PageParser parser = new PageParser(
                 Pattern.compile(ratingPattern),
-                Pattern.compile(usersCountPattern));
-        parser.parse(url);
+                Pattern.compile(usersCountPattern),
+                Pattern.compile(notFoundPattern));
+        if(!parser.parse(url))  {
+            System.out.println("inexistant page " + url);
+        }
         double rating = parser.getRating();
         if(minRating < rating && rating < maxRating
                 && parser.getUserCount() > usersThreshold) {
