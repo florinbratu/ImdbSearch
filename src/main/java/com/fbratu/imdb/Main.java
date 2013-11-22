@@ -11,7 +11,7 @@ public class Main {
 
     private static final String IMDB_URL_PREFIX_PROP = "imdb.url.prefix";
 
-    private static final String RATING_PATTERN = "<div class=\"titlePageSprite star-box-giga-star\"> (\\d.\\d) </div>";
+    private static final String RATING_PATTERN_PROP = "rating.pattern";
 
     private static final String PROPERTIES_FILE = "search.properties";
 
@@ -28,7 +28,8 @@ public class Main {
 
         String urlPrefix = props.getProperty(IMDB_URL_PREFIX_PROP);
         String url = urlPrefix + urlSuffix;
-        PageParser parser = new PageParser(Pattern.compile(RATING_PATTERN));
+        String ratingPattern = props.getProperty(RATING_PATTERN_PROP);
+        PageParser parser = new PageParser(Pattern.compile(ratingPattern));
         parser.parse(url);
         System.out.println("Rating for " + url + " is " + parser.getRating());
     }
