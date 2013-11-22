@@ -15,6 +15,8 @@ public class Main {
 
     private static final String RATING_PATTERN_PROP = "rating.pattern";
 
+    private static final String USERS_COUNT_PATTERN_PROP = "users.count.pattern";
+
     private static final String RATING_MIN_PROP = "rating.min";
 
     private static final String RATING_MAX_PROP = "rating.max";
@@ -35,11 +37,15 @@ public class Main {
         String urlPrefix = props.getProperty(IMDB_URL_PREFIX_PROP);
         String url = urlPrefix + urlSuffix;
         String ratingPattern = props.getProperty(RATING_PATTERN_PROP);
-        PageParser parser = new PageParser(Pattern.compile(ratingPattern));
+        String usersCountPattern = props.getProperty(USERS_COUNT_PATTERN_PROP);
+        PageParser parser = new PageParser(
+                Pattern.compile(ratingPattern),
+                Pattern.compile(usersCountPattern));
         parser.parse(url);
         double rating = parser.getRating();
         if(minRating < rating && rating < maxRating) {
             System.out.println(url);
+            System.out.println("Users count: " + parser.getUserCount());
         }
     }
 
