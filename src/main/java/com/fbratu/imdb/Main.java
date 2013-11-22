@@ -28,8 +28,6 @@ public class Main {
 
     private static final String RATING_MAX_PROP = "rating.max";
 
-    private static final String START_INDEX_PROP = "index.start";
-
     private static final String INDEX_NOTIFICATION_FREQ_PROP = "index.notification.frequency";
 
     private static final String TIMEOUT_RETRY_COUNT_PROP = "timeout.retry.count";
@@ -39,6 +37,11 @@ public class Main {
     private static volatile boolean shutdownRequested = false;
 
     public static void main(String args[]) throws IOException {
+        if(args.length!=1) {
+            System.err.println("Missing mandatory parameter: the index from which to start the search!");
+            System.exit(1);
+        }
+        String startIndex = args[0];
         final Thread mainThread = Thread.currentThread();
         // register shutdown hook
         Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -67,7 +70,7 @@ public class Main {
                 Pattern.compile(ratingPattern),
                 Pattern.compile(usersCountPattern),
                 Pattern.compile(notFoundPattern));
-        String startIndex = props.getProperty(START_INDEX_PROP);
+
         int indexNotificationFrequency = Integer.parseInt(props.getProperty(INDEX_NOTIFICATION_FREQ_PROP));
         String urlSuffix = startIndex;
         int counter = 0;
