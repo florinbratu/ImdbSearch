@@ -16,7 +16,7 @@ public class PageParser {
 
     public static final double RATING_NOT_FOUND = -1;
 
-    public static final double USER_COUNT_NOT_FOUND = -1;
+    public static final int USER_COUNT_NOT_FOUND = -1;
 
     private final Pattern ratingPattern;
 
@@ -65,11 +65,11 @@ public class PageParser {
         }
     }
 
-    public double getUserCount() {
+    public int getUserCount() {
         if(usersCount == null)
             return USER_COUNT_NOT_FOUND;
         try {
-            return Double.parseDouble(usersCount);
+            return Integer.parseInt(usersCount);
         } catch(NumberFormatException e) {
             return USER_COUNT_NOT_FOUND;
         }
