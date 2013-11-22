@@ -46,15 +46,31 @@ public class Main {
                 Pattern.compile(usersCountPattern),
                 Pattern.compile(notFoundPattern));
         String startIndex = props.getProperty(START_INDEX_PROP);
-        String url = urlPrefix + startIndex + "";
-        if(!parser.parse(url))  {
-            System.out.println("inexistant page " + url);
+        String urlSuffix = startIndex;
+        for(int i=0;i<20;i++) {
+            String url = urlPrefix + urlSuffix + "";
+            if(!parser.parse(url))  {
+                System.out.println("inexistant page " + url);
+                break;
+            }
+            double rating = parser.getRating();
+            if(minRating < rating && rating < maxRating
+                    && parser.getUserCount() > usersThreshold) {
+                System.out.println(url);
+            }
+            urlSuffix = nextIndex(urlSuffix);
         }
-        double rating = parser.getRating();
-        if(minRating < rating && rating < maxRating
-                && parser.getUserCount() > usersThreshold) {
-            System.out.println(url);
-        }
+    }
+
+    private static String nextIndex(String index) {
+        if(cornerCases.containsKey(index))
+            return cornerCases.get(index);
+        int firstNonZero;
+        for(firstNonZero=0;firstNonZero<index.length() && index.charAt(firstNonZero)=='0';firstNonZero++);
+        // now, i has the number of zeros
+        int value = Integer.parseInt(index);
+        value++;
+        return index.substring(0,firstNonZero) + value;
     }
 
     public static void testNextIndex(String args[]) {
@@ -83,17 +99,6 @@ public class Main {
         cornerCases.put("0009999","0010000");
         cornerCases.put("0099999","0100000");
         cornerCases.put("0999999","1000000");
-    }
-
-    private static String nextIndex(String index) {
-        if(cornerCases.containsKey(index))
-            return cornerCases.get(index);
-        int firstNonZero;
-        for(firstNonZero=0;firstNonZero<index.length() && index.charAt(firstNonZero)=='0';firstNonZero++);
-        // now, i has the number of zeros
-        int value = Integer.parseInt(index);
-        value++;
-        return index.substring(0,firstNonZero) + value;
     }
 
 }
