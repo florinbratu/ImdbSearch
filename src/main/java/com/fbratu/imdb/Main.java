@@ -27,14 +27,9 @@ public class Main {
 
     public static void main(String args[]) throws IOException {
         String urlSuffix = args[0];
-        Main main = new Main();
-        main.search(urlSuffix);
-    }
-
-    private void search(String urlSuffix) throws IOException {
         // load search properties
         Properties props = new Properties();
-        props.load(getClass().getResourceAsStream(PROPERTIES_FILE));
+        props.load(Main.class.getResourceAsStream(PROPERTIES_FILE));
 
         double minRating = Double.parseDouble(props.getProperty(RATING_MIN_PROP));
         double maxRating = Double.parseDouble(props.getProperty(RATING_MAX_PROP));
