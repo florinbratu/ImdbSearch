@@ -75,7 +75,7 @@ public class Main {
             }
             urlSuffix = nextIndex(urlSuffix);
         }
-        System.out.println("Search stopped at:" + urlSuffix);
+        System.err.println("Search stopped at:" + urlSuffix);
     }
 
     private static String nextIndex(String index) {
