@@ -24,14 +24,17 @@ public class PageParser {
 
     private final Pattern notFoundPattern;
 
+    private final char readBuffer[];
+
     private String rating;
 
     private String usersCount;
 
-    public PageParser(Pattern ratingPattern, Pattern usersCountPattern, Pattern notFoundPattern) {
+    public PageParser(Pattern ratingPattern, Pattern usersCountPattern, Pattern notFoundPattern, int readBufferSize) {
         this.ratingPattern = ratingPattern;
         this.usersCountPattern = usersCountPattern;
         this.notFoundPattern = notFoundPattern;
+        readBuffer = new char[readBufferSize];
     }
 
     // return false if 404 page
@@ -42,8 +45,8 @@ public class PageParser {
                         urlToOpen.openStream()));
         String s;
         StringBuilder builder = new StringBuilder();
-        while ((s = bufferedReader.readLine()) != null) {
-            builder.append(s);
+        while (bufferedReader.read(readBuffer, 0 , readBuffer.length) != -1) {
+            builder.append(readBuffer);
         }
         String content = builder.toString();
         // check for 404

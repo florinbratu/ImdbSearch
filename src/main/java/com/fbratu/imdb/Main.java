@@ -34,6 +34,8 @@ public class Main {
 
     private static final String TIMEOUT_RETRY_FREQ_PROP = "timeout.retry.frequency";
 
+    private static final String READ_BUFFER_SIZE_PROP = "read.buffer.size";
+
     private static volatile boolean shutdownRequested = false;
 
     public static void main(String args[]) throws IOException {
@@ -66,10 +68,12 @@ public class Main {
         String usersCountPattern = props.getProperty(USERS_COUNT_PATTERN_PROP);
         int usersThreshold = Integer.parseInt(props.getProperty(USERS_THRESHOLD_PROP));
         String notFoundPattern = props.getProperty(NOT_FOUND_PATTERN_PROP);
+        int readBufferSize = Integer.parseInt(props.getProperty(READ_BUFFER_SIZE_PROP));
         PageParser parser = new PageParser(
                 Pattern.compile(ratingPattern),
                 Pattern.compile(usersCountPattern),
-                Pattern.compile(notFoundPattern));
+                Pattern.compile(notFoundPattern),
+                readBufferSize);
 
         int indexNotificationFrequency = Integer.parseInt(props.getProperty(INDEX_NOTIFICATION_FREQ_PROP));
         String urlSuffix = startIndex;
