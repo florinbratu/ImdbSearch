@@ -6,39 +6,12 @@ import java.net.ConnectException;
 import java.net.SocketException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 import java.util.regex.Pattern;
 
 /**
  * Author: Florin
  */
 public class Main {
-
-    private static final String PROPERTIES_FILE = "search.properties";
-
-    private static final String IMDB_URL_PREFIX_PROP = "imdb.url.prefix";
-
-    private static final String RATING_PATTERN_PROP = "rating.pattern";
-
-    private static final String USERS_COUNT_PATTERN_PROP = "users.count.pattern";
-
-    private static final String NOT_FOUND_PATTERN_PROP = "404.pattern";
-
-    private static final String USERS_THRESHOLD_PROP = "users.threshold";
-
-    private static final String RATING_MIN_PROP = "rating.min";
-
-    private static final String RATING_MAX_PROP = "rating.max";
-
-    private static final String INDEX_NOTIFICATION_FREQ_PROP = "index.notification.frequency";
-
-    private static final String TIMEOUT_RETRY_COUNT_PROP = "timeout.retry.count";
-
-    private static final String TIMEOUT_RETRY_FREQ_PROP = "timeout.retry.frequency";
-
-    private static final String READ_BUFFER_SIZE_PROP = "read.buffer.size";
-
-    private static final String MAX_NOT_FOUND_PROP = "missing.pages.max";
 
     private static volatile boolean shutdownRequested = false;
 
@@ -61,36 +34,25 @@ public class Main {
                 }
             }
         });
-        // load search properties
-        Properties props = new Properties();
-        props.load(Main.class.getResourceAsStream(PROPERTIES_FILE));
 
-        double minRating = Double.parseDouble(props.getProperty(RATING_MIN_PROP));
-        double maxRating = Double.parseDouble(props.getProperty(RATING_MAX_PROP));
-        String urlPrefix = props.getProperty(IMDB_URL_PREFIX_PROP);
-        String ratingPattern = props.getProperty(RATING_PATTERN_PROP);
-        String usersCountPattern = props.getProperty(USERS_COUNT_PATTERN_PROP);
-        int usersThreshold = Integer.parseInt(props.getProperty(USERS_THRESHOLD_PROP));
-        String notFoundPattern = props.getProperty(NOT_FOUND_PATTERN_PROP);
-        int readBufferSize = Integer.parseInt(props.getProperty(READ_BUFFER_SIZE_PROP));
+        // init configuration
+        Configuration conf = new Configuration();
+        conf.init();
+
         PageParser parser = new PageParser(
-                Pattern.compile(ratingPattern),
-                Pattern.compile(usersCountPattern),
-                Pattern.compile(notFoundPattern),
-                readBufferSize);
+                Pattern.compile(conf.getRatingPattern()),
+                Pattern.compile(conf.getUsersCountPattern()),
+                Pattern.compile(conf.getNotFoundPattern()),
+                conf.getReadBufferSize());
 
-        int indexNotificationFrequency = Integer.parseInt(props.getProperty(INDEX_NOTIFICATION_FREQ_PROP));
         String urlSuffix = startIndex;
         int counter = 0;
-        int retryCount = Integer.parseInt(props.getProperty(TIMEOUT_RETRY_COUNT_PROP));
-        int retries = retryCount;
-        long retryFrequency = Long.parseLong(props.getProperty(TIMEOUT_RETRY_FREQ_PROP));
+        int retries = conf.getRetryCount();
         boolean connectionError = false;
         boolean notFound = false;
-        int notFoundCount = Integer.parseInt(props.getProperty(MAX_NOT_FOUND_PROP));
-        int notFounds = notFoundCount;
+        int notFounds = conf.getNotFoundCount();
         while(!shutdownRequested) {
-            String url = urlPrefix + urlSuffix + "";
+            String url = conf.getUrlPrefix() + urlSuffix + "";
             try {
                 notFound = !parser.parse(url);
                 connectionError = false;
@@ -102,39 +64,39 @@ public class Main {
                 notFound = true;
             }
             double rating = parser.getRating();
-            if(minRating < rating && rating < maxRating
-                    && parser.getUserCount() > usersThreshold) {
+            if(conf.getMinRating() < rating && rating < conf.getMaxRating()
+                    && parser.getUserCount() > conf.getUsersThreshold()) {
                 System.out.println(url);
             }
             if(!connectionError && !notFound) {
                 urlSuffix = nextIndex(urlSuffix);
                 counter++;
-                if(counter==indexNotificationFrequency) {
+                if(counter==conf.getIndexNotificationFrequency()) {
                     System.out.println("Now arriving at " + urlSuffix);
                     counter=0;
                 }
-                retries = retryCount;
-                notFounds = notFoundCount;
+                retries = conf.getRetryCount();
+                notFounds = conf.getNotFoundCount();
             } else if(notFound) {
                 if(notFounds>0) {
                     System.err.println("Inexistant page, dropping:" + url);
                     urlSuffix = nextIndex(urlSuffix);
-                    retries = retryCount;
+                    retries = conf.getRetryCount();
                     notFounds--;
                 } else {
-                    System.err.println(notFoundCount + " consecutive inexistant pages encountered. Aborting.");
+                    System.err.println(conf.getNotFoundCount() + " consecutive inexistant pages encountered. Aborting.");
                     break;
                 }
             } else {
                 if(retries == 0) {
                     System.err.println("Dropping " + url);
                     urlSuffix = nextIndex(urlSuffix);
-                    retries = retryCount;
+                    retries = conf.getRetryCount();
                 } else {
                     System.err.println("Connection error while accessing " + url
-                            + " retrying in " + (retryFrequency / 1000) + " secs");
+                            + " retrying in " + (conf.getRetryFrequency() / 1000) + " secs");
                     try {
-                        Thread.sleep(retryFrequency);
+                        Thread.sleep(conf.getRetryFrequency());
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
