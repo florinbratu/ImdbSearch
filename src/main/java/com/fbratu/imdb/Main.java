@@ -3,6 +3,7 @@ package com.fbratu.imdb;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.ConnectException;
+import java.net.SocketException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -84,7 +85,7 @@ public class Main {
         int retryCount = Integer.parseInt(props.getProperty(TIMEOUT_RETRY_COUNT_PROP));
         int retries = retryCount;
         long retryFrequency = Long.parseLong(props.getProperty(TIMEOUT_RETRY_FREQ_PROP));
-        boolean connectionTimedOut = false;
+        boolean connectionError = false;
         boolean notFound = false;
         int notFoundCount = Integer.parseInt(props.getProperty(MAX_NOT_FOUND_PROP));
         int notFounds = notFoundCount;
@@ -92,9 +93,11 @@ public class Main {
             String url = urlPrefix + urlSuffix + "";
             try {
                 notFound = !parser.parse(url);
-                connectionTimedOut = false;
+                connectionError = false;
             } catch(ConnectException conne) {
-                connectionTimedOut = true;
+                connectionError = true;
+            } catch(SocketException socke) {
+                connectionError = true;
             } catch(FileNotFoundException fnfe) {
                 notFound = true;
             }
@@ -103,7 +106,7 @@ public class Main {
                     && parser.getUserCount() > usersThreshold) {
                 System.out.println(url);
             }
-            if(!connectionTimedOut && !notFound) {
+            if(!connectionError && !notFound) {
                 urlSuffix = nextIndex(urlSuffix);
                 counter++;
                 if(counter==indexNotificationFrequency) {
@@ -128,7 +131,8 @@ public class Main {
                     urlSuffix = nextIndex(urlSuffix);
                     retries = retryCount;
                 } else {
-                    System.err.println("Could not access " + url + " retrying in " + (retryFrequency / 1000) + " secs");
+                    System.err.println("Connection error while accessing " + url
+                            + " retrying in " + (retryFrequency / 1000) + " secs");
                     try {
                         Thread.sleep(retryFrequency);
                     } catch (InterruptedException e) {
