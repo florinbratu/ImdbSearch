@@ -107,7 +107,7 @@ public class Main {
                 urlSuffix = nextIndex(urlSuffix);
                 counter++;
                 if(counter==indexNotificationFrequency) {
-                    System.err.println("Now arriving at " + urlSuffix);
+                    System.out.println("Now arriving at " + urlSuffix);
                     counter=0;
                 }
                 retries = retryCount;

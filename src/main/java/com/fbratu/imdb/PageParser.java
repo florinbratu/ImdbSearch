@@ -83,7 +83,7 @@ public class PageParser {
         if(usersCount == null)
             return USER_COUNT_NOT_FOUND;
         try {
-            return Integer.parseInt(usersCount);
+            return Integer.parseInt(usersCount.replaceAll("[\\,\\.\\s]+",""));
         } catch(NumberFormatException e) {
             return USER_COUNT_NOT_FOUND;
         }
