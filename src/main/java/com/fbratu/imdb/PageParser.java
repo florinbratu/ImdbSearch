@@ -26,10 +26,6 @@ public class PageParser {
 
     private final char readBuffer[];
 
-    private String rating;
-
-    private String usersCount;
-
     public PageParser(Pattern ratingPattern, Pattern usersCountPattern, Pattern notFoundPattern, int readBufferSize) {
         this.ratingPattern = ratingPattern;
         this.usersCountPattern = usersCountPattern;
@@ -37,13 +33,11 @@ public class PageParser {
         readBuffer = new char[readBufferSize];
     }
 
-    // return false if 404 page
-    public boolean parse(String url) throws IOException {
+    public ParseResult parse(String url) throws IOException {
         URL urlToOpen = new URL(url);
         BufferedReader bufferedReader = new BufferedReader(
                 new InputStreamReader(
                         urlToOpen.openStream()));
-        String s;
         StringBuilder builder = new StringBuilder();
         while (bufferedReader.read(readBuffer, 0 , readBuffer.length) != -1) {
             builder.append(readBuffer);
@@ -51,41 +45,26 @@ public class PageParser {
         String content = builder.toString();
         // check for 404
         Matcher notFoundMatcher = notFoundPattern.matcher(content);
+        boolean notFound = false;
         if(notFoundMatcher.find()) {
-            return false;
+            notFound = true;
         }
         Matcher ratingMatcher = ratingPattern.matcher(content);
+        String rating;
         if(ratingMatcher.find()) {
             rating = ratingMatcher.group(1);
         } else {
             rating = null;
         }
         Matcher usersCountMatcher = usersCountPattern.matcher(content);
+        String usersCount;
         if(usersCountMatcher.find()) {
             usersCount = usersCountMatcher.group(1);
         } else {
             usersCount = null;
         }
-        return true;
-    }
-
-    public double getRating() {
-         if(rating == null)
-              return RATING_NOT_FOUND;
-        try {
-            return Double.parseDouble(rating);
-        } catch(NumberFormatException e) {
-            return RATING_NOT_FOUND;
-        }
-    }
-
-    public int getUserCount() {
-        if(usersCount == null)
-            return USER_COUNT_NOT_FOUND;
-        try {
-            return Integer.parseInt(usersCount.replaceAll("[\\,\\.\\s]+",""));
-        } catch(NumberFormatException e) {
-            return USER_COUNT_NOT_FOUND;
-        }
+        ParseResult result = new ParseResult(url,usersCount,rating);
+        result.setNotFound(notFound);
+        return result;
     }
 }

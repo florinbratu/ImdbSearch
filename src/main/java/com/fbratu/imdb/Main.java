@@ -53,8 +53,10 @@ public class Main {
         int notFounds = conf.getNotFoundCount();
         while(!shutdownRequested) {
             String url = conf.getUrlPrefix() + urlSuffix + "";
+            ParseResult result = null;
             try {
-                notFound = !parser.parse(url);
+                result = parser.parse(url);
+                notFound = result.isNotFound();
                 connectionError = false;
             } catch(ConnectException conne) {
                 connectionError = true;
@@ -63,21 +65,7 @@ public class Main {
             } catch(FileNotFoundException fnfe) {
                 notFound = true;
             }
-            double rating = parser.getRating();
-            if(conf.getMinRating() < rating && rating < conf.getMaxRating()
-                    && parser.getUserCount() > conf.getUsersThreshold()) {
-                System.out.println(url);
-            }
-            if(!connectionError && !notFound) {
-                urlSuffix = nextIndex(urlSuffix);
-                counter++;
-                if(counter==conf.getIndexNotificationFrequency()) {
-                    System.out.println("Now arriving at " + urlSuffix);
-                    counter=0;
-                }
-                retries = conf.getRetryCount();
-                notFounds = conf.getNotFoundCount();
-            } else if(notFound) {
+            if(notFound) {
                 if(notFounds>0) {
                     System.err.println("Inexistant page, dropping:" + url);
                     urlSuffix = nextIndex(urlSuffix);
@@ -87,7 +75,7 @@ public class Main {
                     System.err.println(conf.getNotFoundCount() + " consecutive inexistant pages encountered. Aborting.");
                     break;
                 }
-            } else {
+            } else if(connectionError) {
                 if(retries == 0) {
                     System.err.println("Dropping " + url);
                     urlSuffix = nextIndex(urlSuffix);
@@ -102,6 +90,22 @@ public class Main {
                     }
                     retries--;
                 }
+            } else {
+                // no error
+                double rating = result.getRating();
+                int usersCount = result.getUsersCount();
+                if((rating != PageParser.RATING_NOT_FOUND && conf.getMinRating() < rating && rating < conf.getMaxRating())
+                        && (usersCount != PageParser.USER_COUNT_NOT_FOUND && usersCount > conf.getUsersThreshold())) {
+                    System.out.println(result.getUrl());
+                }
+                urlSuffix = nextIndex(urlSuffix);
+                counter++;
+                if(counter==conf.getIndexNotificationFrequency()) {
+                    System.out.println("Now arriving at " + urlSuffix);
+                    counter=0;
+                }
+                retries = conf.getRetryCount();
+                notFounds = conf.getNotFoundCount();
             }
         }
         System.err.println("Search stopped at:" + urlSuffix);
