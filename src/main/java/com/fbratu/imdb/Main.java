@@ -1,5 +1,6 @@
 package com.fbratu.imdb;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.util.HashMap;
@@ -35,6 +36,8 @@ public class Main {
     private static final String TIMEOUT_RETRY_FREQ_PROP = "timeout.retry.frequency";
 
     private static final String READ_BUFFER_SIZE_PROP = "read.buffer.size";
+
+    private static final String MAX_NOT_FOUND_PROP = "missing.pages.max";
 
     private static volatile boolean shutdownRequested = false;
 
@@ -81,24 +84,26 @@ public class Main {
         int retryCount = Integer.parseInt(props.getProperty(TIMEOUT_RETRY_COUNT_PROP));
         int retries = retryCount;
         long retryFrequency = Long.parseLong(props.getProperty(TIMEOUT_RETRY_FREQ_PROP));
-        boolean connectionTimedOut;
+        boolean connectionTimedOut = false;
+        boolean notFound = false;
+        int notFoundCount = Integer.parseInt(props.getProperty(MAX_NOT_FOUND_PROP));
+        int notFounds = notFoundCount;
         while(!shutdownRequested) {
             String url = urlPrefix + urlSuffix + "";
             try {
-                if(!parser.parse(url))  {
-                    System.out.println("inexistant page " + url);
-                    break;
-                }
+                notFound = !parser.parse(url);
                 connectionTimedOut = false;
-            } catch(ConnectException e) {
+            } catch(ConnectException conne) {
                 connectionTimedOut = true;
+            } catch(FileNotFoundException fnfe) {
+                notFound = true;
             }
             double rating = parser.getRating();
             if(minRating < rating && rating < maxRating
                     && parser.getUserCount() > usersThreshold) {
                 System.out.println(url);
             }
-            if(!connectionTimedOut) {
+            if(!connectionTimedOut && !notFound) {
                 urlSuffix = nextIndex(urlSuffix);
                 counter++;
                 if(counter==indexNotificationFrequency) {
@@ -106,6 +111,17 @@ public class Main {
                     counter=0;
                 }
                 retries = retryCount;
+                notFounds = notFoundCount;
+            } else if(notFound) {
+                if(notFounds>0) {
+                    System.err.println("Inexistant page, dropping:" + url);
+                    urlSuffix = nextIndex(urlSuffix);
+                    retries = retryCount;
+                    notFounds--;
+                } else {
+                    System.err.println(notFoundCount + " consecutive inexistant pages encountered. Aborting.");
+                    break;
+                }
             } else {
                 if(retries == 0) {
                     System.err.println("Dropping " + url);
