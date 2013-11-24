@@ -64,6 +64,18 @@ public class Main {
                 connectionError = true;
             } catch(FileNotFoundException fnfe) {
                 notFound = true;
+            } catch(IOException ioe) {
+                // in all other cases -> discard current entry
+                System.err.println("URL " + url + " discarded due to error " + ioe.getMessage());
+                urlSuffix = nextIndex(urlSuffix);
+                counter++;
+                if(counter==conf.getIndexNotificationFrequency()) {
+                    System.out.println("Now arriving at " + urlSuffix);
+                    counter=0;
+                }
+                retries = conf.getRetryCount();
+                notFounds = conf.getNotFoundCount();
+                continue;
             }
             if(notFound) {
                 if(notFounds>0) {
@@ -94,7 +106,7 @@ public class Main {
                 // no error
                 double rating = result.getRating();
                 int usersCount = result.getUsersCount();
-                if((rating != PageParser.RATING_NOT_FOUND && conf.getMinRating() < rating && rating < conf.getMaxRating())
+                if((rating != PageParser.RATING_NOT_FOUND && conf.getMinRating() <= rating && rating < conf.getMaxRating())
                         && (usersCount != PageParser.USER_COUNT_NOT_FOUND && usersCount > conf.getUsersThreshold())) {
                     System.out.println(result.getUrl());
                 }
